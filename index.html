@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#294f3a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="TRUSTDESI">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>TRUSTDESI Dairy Checklist</title>
+<style>
+:root{--g:#294f3a;--bg:#f3f6f1;--ink:#1c2820;--muted:#66736a;--line:#dfe7df;--white:#fff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+header{background:var(--g);color:white;padding:calc(20px + env(safe-area-inset-top)) 20px 20px}header small{letter-spacing:2px;font-weight:800;opacity:.8}header h1{margin:5px 0;font-size:26px}header p{margin:0;opacity:.85}
+main{max-width:720px;margin:auto;padding:14px 14px calc(40px + env(safe-area-inset-bottom))}
+nav{display:flex;gap:8px;margin-bottom:12px}nav button{flex:1;border:1px solid var(--line);border-radius:13px;padding:12px;background:white;color:var(--g);font-weight:800;font-size:15px}nav button.active{background:var(--g);color:white}
+.card{background:white;border:1px solid var(--line);border-radius:16px;padding:15px;margin:11px 0}
+label{font-weight:700}input[type=date],input[type=number],input[type=text],textarea{font:inherit;border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;background:white;color:var(--ink)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:flex;flex-direction:column;gap:6px}
+h2{font-size:18px;margin:0 0 10px}.section{border:1px solid var(--line);border-radius:14px;background:white;margin:10px 0;overflow:hidden}.section h3{font-size:16px;margin:0;padding:12px 14px;background:#f8faf7;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}.section h3 span{color:var(--muted);font-size:13px;white-space:nowrap}
+.task{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;border-bottom:1px solid #edf1ed}.task:last-child{border:0}.task input{width:22px;height:22px;flex:0 0 22px;margin:0;accent-color:var(--g)}.task label{font-weight:500;flex:1}
+.stats{display:flex;justify-content:space-between;align-items:center;font-weight:800;color:var(--g)}.progress{height:8px;border-radius:9px;background:#e7ede7;margin-top:10px;overflow:hidden}.progress div{height:100%;background:var(--g);width:0}
+button.action{border:0;border-radius:12px;background:var(--g);color:white;padding:14px;width:100%;font:inherit;font-weight:800;margin-top:8px}button.light{background:#e9f0e9;color:var(--g)}button.delete{background:#f8e9e7;color:#a5322a}
+.hint{font-size:13px;color:var(--muted);margin:8px 0}.record{background:white;border:1px solid var(--line);border-radius:13px;padding:14px;margin:9px 0}.record button{margin-top:10px}.hidden{display:none!important}.empty{text-align:center;color:var(--muted);padding:28px 12px}.saved{padding:10px;background:#eaf2eb;color:var(--g);border-radius:10px;margin:10px 0;font-weight:700}
+</style>
+</head>
+<body>
+<header><small>TRUSTDESI DAIRY</small><h1>Daily Farm Checklist</h1><p>रोज़ के जरूरी काम • रिकॉर्ड सेव करें</p></header>
+<main>
+<nav><button id="tabToday" class="active" onclick="switchTab('today')">आज की Checklist</button><button id="tabRecords" onclick="switchTab('records')">पुराने Records</button></nav>
+<section id="today">
+<div class="card">
+<div class="row">
+<div class="field"><label for="date">तारीख</label><input id="date" type="date"></div>
+<div class="field"><label for="count">आज कुल पशु</label><input id="count" type="number" min="1" max="5000" step="1" value="20"></div>
+</div>
+<p class="hint">पशुओं की संख्या बढ़ने पर यहाँ बदल दें। App 20, 60 या 100+ पशुओं के लिए इसी तरह काम करेगी।</p>
+</div>
+<div id="saved" class="saved hidden"></div>
+<div class="card"><div class="stats"><span id="percent">0% पूरा</span><span id="done">0 / 0</span></div><div class="progress"><div id="bar"></div></div></div>
+<div id="tasks"></div>
+<div class="card">
+<h2>दैनिक जरूरी रिकॉर्ड</h2>
+<div class="field"><label for="milk">आज का कुल दूध (लीटर)</label><input id="milk" type="number" min="0" step="0.1" placeholder="जैसे 125.5"></div>
+<div class="field" style="margin-top:10px"><label for="issue">बीमार / असामान्य पशु ID और जरूरी नोट</label><textarea id="issue" rows="3" placeholder="जैसे TD-014: खाना कम, जांच करनी है"></textarea></div>
+<button class="action" onclick="saveRecord()">Submit / Save Record</button>
+<p class="hint">एक तारीख का रिकॉर्ड दोबारा submit करने पर उसी तारीख का रिकॉर्ड अपडेट होगा।</p>
+</div>
+</section>
+<section id="records" class="hidden">
+<div class="card"><label for="month">महीने के रिकॉर्ड</label><input id="month" type="month" style="margin-top:6px"><button class="action light" onclick="document.getElementById('month').value='';renderRecords()">सभी रिकॉर्ड दिखाएँ</button></div>
+<div id="recordList"></div><div id="recordDetail"></div>
+</section>
+<p class="hint" style="text-align:center">Records इसी iPhone के Safari में सेव होंगे। दूसरे फोन पर अपने-आप sync नहीं होंगे।</p>
+</main>
+<script>
+const TASKS=[
+{title:"सुबह पशु निरीक्षण",items:[
+"सभी पशुओं की उपस्थिति और बीमार/असामान्य पशु देखें",
+"भूख, जुगाली, गोबर और व्यवहार में असामान्यता देखें",
+"थन में सूजन/गर्मी/दर्द और दूध में बदलाव देखें",
+"लंगड़ापन, चोट या चलने में परेशानी देखें",
+"संदिग्ध पशु को अलग रखें और ID नोट करें"]},
+{title:"चारा और पानी",items:[
+"सही ration और मात्रा के अनुसार चारा दिया",
+"चारा फफूंद/सड़न से मुक्त है",
+"साफ पानी लगातार उपलब्ध है",
+"पानी की टंकी/नांद साफ और चालू है"]},
+{title:"दूध निकालना",items:[
+"दूध निकालने की जगह और हाथ साफ हैं",
+"थन साफ करके सुखाए; शुरुआती धार जांची",
+"असामान्य दूध अलग रखा; संदिग्ध पशु का दूध बिक्री में नहीं गया",
+"दूध साफ बर्तन में रखा और समय पर ठंडा/भेजा",
+"Milking के बाद teat disinfection किया",
+"दूध के बर्तन धोकर साफ और सूखे रखे"]},
+{title:"शेड और सफाई",items:[
+"गोबर हटाया; आराम की जगह साफ और सूखी है",
+"नाली खुली है; पानी/मूत्र जमा नहीं है",
+"फर्श फिसलन-मुक्त और पशुओं के लिए सुरक्षित है",
+"पंखे/पानी की लाइन/जरूरी उपकरण चल रहे हैं"]},
+{title:"दिन के अंत में",items:[
+"आज का कुल दूध लीटर में दर्ज किया",
+"बीमार पशु, treatment, heat/AI या calving की entry की",
+"दवा चल रहे पशु का milk withdrawal ध्यान में रखा",
+"शाम का चारा और पानी दिया; पशु सुरक्षित हैं",
+"कल के जरूरी काम/जांच के लिए नोट बनाया"]}
+];
+const DBKEY="trustdesi_dairy_records_v2";
+let records=readRecords();
+function readRecords(){try{return JSON.parse(localStorage.getItem(DBKEY)||"{}")}catch(e){return {}}}
+function dateToday(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function escapeHTML(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function taskIds(){return TASKS.flatMap((g,gi)=>g.items.map((t,ti)=>`${gi}_${ti}`))}
+function currentChecks(){let c={};document.querySelectorAll("#tasks input[type=checkbox]").forEach(x=>c[x.dataset.id]=x.checked);return c}
+function renderTasks(checks={}){let root=document.getElementById("tasks");root.innerHTML="";
+TASKS.forEach((g,gi)=>{let box=document.createElement("div");box.className="section";let n=g.items.filter((_,ti)=>checks[`${gi}_${ti}`]).length;box.innerHTML=`<h3>${escapeHTML(g.title)} <span>${n}/${g.items.length}</span></h3>`;
+g.items.forEach((t,ti)=>{let id=`${gi}_${ti}`,row=document.createElement("div");row.className="task";row.innerHTML=`<input type="checkbox" data-id="${id}" id="task_${id}" ${checks[id]?"checked":""}><label for="task_${id}">${escapeHTML(t)}</label>`;row.querySelector("input").addEventListener("change",updateProgress);box.appendChild(row)});root.appendChild(box)});
+updateProgress()}
+function updateProgress(){let c=currentChecks(),total=taskIds().length,done=Object.values(c).filter(Boolean).length,p=Math.round(done/total*100);document.getElementById("percent").textContent=p+"% पूरा";document.getElementById("done").textContent=`${done} / ${total}`;document.getElementById("bar").style.width=p+"%";document.querySelectorAll(".section").forEach((box,gi)=>{let n=box.querySelectorAll("input:checked").length;box.querySelector("h3 span").textContent=`${n}/${TASKS[gi].items.length}`})}
+function loadDate(){let d=document.getElementById("date").value,r=records[d];renderTasks(r?.checks||{});document.getElementById("count").value=r?.animalCount??document.getElementById("count").value??20;document.getElementById("milk").value=r?.milk??"";document.getElementById("issue").value=r?.issue??"";let saved=document.getElementById("saved");saved.classList.toggle("hidden",!r);if(r)saved.textContent=`${d} का रिकॉर्ड मौजूद है • ${r.animalCount} पशु • ${r.percent}% checklist पूरी`; }
+function saveRecord(){let date=document.getElementById("date").value,count=Number(document.getElementById("count").value),milk=document.getElementById("milk").value,issue=document.getElementById("issue").value;if(!date){alert("तारीख चुनें");return}if(!Number.isInteger(count)||count<1||count>5000){alert("पशुओं की संख्या 1 से 5000 के बीच दर्ज करें");return}
+let checks=currentChecks(),total=taskIds().length,done=Object.values(checks).filter(Boolean).length,existing=records[date];if(existing&&!confirm("इस तारीख का रिकॉर्ड पहले से है। Update करें?"))return;
+records[date]={date,animalCount:count,checks,milk:milk===""?"":Number(milk),issue:issue.trim(),done,total,percent:Math.round(done/total*100),savedAt:new Date().toISOString()};
+try{localStorage.setItem(DBKEY,JSON.stringify(records))}catch(e){alert("फोन की storage में जगह कम है। पुराने records हटाएँ या browser storage खाली करें।");return}
+let s=document.getElementById("saved");s.classList.remove("hidden");s.textContent=`रिकॉर्ड सेव • ${count} पशु • ${done}/${total} काम (${records[date].percent}%)`; }
+function switchTab(t){document.getElementById("today").classList.toggle("hidden",t!=="today");document.getElementById("records").classList.toggle("hidden",t!=="records");document.getElementById("tabToday").classList.toggle("active",t==="today");document.getElementById("tabRecords").classList.toggle("active",t==="records");if(t==="records")renderRecords()}
+function renderRecords(){let filter=document.getElementById("month").value,list=document.getElementById("recordList"),detail=document.getElementById("recordDetail");detail.innerHTML="";let arr=Object.values(records).filter(r=>!filter||r.date.startsWith(filter)).sort((a,b)=>b.date.localeCompare(a.date));list.innerHTML="";if(!arr.length){list.innerHTML='<div class="empty">अभी कोई रिकॉर्ड नहीं है।</div>';return}
+arr.forEach(r=>{let el=document.createElement("div");el.className="record";el.innerHTML=`<b>${escapeHTML(r.date)}</b><p>${r.animalCount} पशु • ${r.percent}% checklist • ${r.milk===""?"दूध दर्ज नहीं":escapeHTML(r.milk)+" L"}</p><button class="action light" style="margin-top:0" onclick="viewRecord('${r.date}')">रिकॉर्ड देखें</button>`;list.appendChild(el)})}
+function viewRecord(date){let r=records[date],d=document.getElementById("recordDetail");if(!r)return;let html=`<div class="card"><h2>${escapeHTML(date)} का रिकॉर्ड</h2><p><b>पशु:</b> ${r.animalCount} • <b>Checklist:</b> ${r.percent}% (${r.done}/${r.total})</p><p><b>कुल दूध:</b> ${r.milk===""?"नहीं दर्ज":escapeHTML(r.milk)+" L"}</p><p><b>बीमार/नोट:</b> ${escapeHTML(r.issue||"कोई नोट नहीं")}</p><h3>Checklist status</h3><ul>`;
+TASKS.forEach((g,gi)=>{html+=`<li><b>${escapeHTML(g.title)}</b><ul>`;g.items.forEach((t,ti)=>html+=`<li>${r.checks[`${gi}_${ti}`]?"✓":"○"} ${escapeHTML(t)}</li>`);html+="</ul></li>"});html+=`</ul><button class="action light" onclick="editRecord('${date}')">इस तारीख को खोलें / edit करें</button><button class="action delete" onclick="deleteRecord('${date}')">रिकॉर्ड हटाएँ</button></div>`;d.innerHTML=html;d.scrollIntoView({behavior:"smooth",block:"start"})}
+function editRecord(date){document.getElementById("date").value=date;loadDate();switchTab("today")}
+function deleteRecord(date){if(!confirm(date+" का रिकॉर्ड delete करें?"))return;delete records[date];localStorage.setItem(DBKEY,JSON.stringify(records));renderRecords()}
+document.getElementById("date").value=dateToday();document.getElementById("date").addEventListener("change",loadDate);document.getElementById("month").addEventListener("change",renderRecords);renderTasks();loadDate();
+if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
+</script>
+</body></html>
